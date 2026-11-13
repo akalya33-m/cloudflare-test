@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudflare Pages Test Suite</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ Cloudflare Test Node</h1>
+            <p class="subtitle">Deployed successfully without a custom domain!</p>
+        </header>
+
+        <main>
+            <div class="card">
+                <h2>API Latency Checker</h2>
+                <p>Test live response times from public endpoints.</p>
+                <button id="testBtn" onclick="runTest()">Run Latency Test</button>
+                <div id="results" class="results-box hidden">
+                    <span id="statusText">Checking...</span>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Hosted securely on Cloudflare Pages (*.pages.dev)</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
