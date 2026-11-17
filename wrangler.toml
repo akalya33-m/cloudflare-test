@@ -1,0 +1,7 @@
+name = "attendance-portal"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "public"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "c06c814cf1ef44379066a40afd56b43d"
