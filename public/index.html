@@ -94,7 +94,6 @@
       const syncStatus = document.getElementById("syncStatus");
 
       try {
-        // 1. Direct browser fetch from your PHP endpoint
         const response = await fetch('https://iyattraltechnologies.com/save_log.php', {
           method: 'GET',
           mode: 'cors'
@@ -113,12 +112,10 @@
           return;
         }
 
-        // 2. Display the exact extracted text on screen
         outputArea.textContent = rawText;
         syncStatus.textContent = "Extracted & Synced Successfully";
         syncStatus.className = "status-badge status-success";
 
-        // 3. Automatically store the extracted data into Cloudflare KV via backend function
         await fetch('/api/store-logs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -127,7 +124,7 @@
 
       } catch (error) {
         console.error("Extraction Error:", error);
-        outputArea.textContent = `Direct fetch failed: ${error.message}\n\nNote: If this is a CORS error, please ensure that your Hostinger PHP server allows cross-origin requests from your Cloudflare domain.`;
+        outputArea.textContent = `Direct fetch failed: ${error.message}\n\nNote: If this is a CORS error, please ensure that your Hostinger PHP server allows cross-origin requests.`;
         syncStatus.textContent = "Failed";
         syncStatus.className = "status-badge status-error";
       }
