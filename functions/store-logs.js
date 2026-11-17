@@ -11,7 +11,6 @@ export async function onRequestPost(context) {
       });
     }
 
-    // Store raw logs in Cloudflare KV
     const todayDate = new Date().toISOString().split('T')[0];
     const storageKey = `raw_logs_${todayDate}`;
 
@@ -22,7 +21,7 @@ export async function onRequestPost(context) {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "Logs successfully received and saved to Cloudflare KV!" 
+      message: "Logs successfully saved to Cloudflare KV!" 
     }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
