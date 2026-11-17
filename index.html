@@ -3,32 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloudflare Pages Test Suite</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Iyattral Technologies - Fingerprint & RFID Attendance Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <!-- CSS Link -->
+    <link rel="stylesheet" href="assets/css/style.css?v=1000.0">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>⚡ Cloudflare Test Node</h1>
-            <p class="subtitle">Deployed successfully without a custom domain!</p>
-        </header>
-
-        <main>
-            <div class="card">
-                <h2>API Latency Checker</h2>
-                <p>Test live response times from public endpoints.</p>
-                <button id="testBtn" onclick="runTest()">Run Latency Test</button>
-                <div id="results" class="results-box hidden">
-                    <span id="statusText">Checking...</span>
+        <!-- Executive Header -->
+        <div class="header">
+            <div class="brand-container">
+                <img src="https://iyattraltechnologies.com/wp-content/uploads/2026/01/WhatsApp-Image-2025-12-24-at-11.45.35-AM.jpeg" alt="Iyattral Logo" class="company-logo" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
+                <div class="title-group">
+                    <h1>IYATTRAL TECHNOLOGIES</h1>
+                    <p>Biometric Attendance Intelligence | Shift: 10:00 AM – 07:00 PM</p>
                 </div>
             </div>
-        </main>
+            <div class="header-actions">
+                <button class="settings-btn" onclick="openReportsModal()">📊 Reports Center</button>
+                <button class="settings-btn holiday-btn" onclick="openHolidayManagerModal()">⚙️ Manage Holidays</button>
+                <button class="settings-btn" style="background: rgba(16, 185, 129, 0.25); border-color: rgba(16, 185, 129, 0.5); color: #34d399;" onclick="openHardwareModal('enroll')">➕ Enroll Fingerprint</button>
+                <button class="settings-btn" style="background: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.5); color: #fca5a5;" onclick="openHardwareModal('delete')">🗑️ Delete Fingerprint</button>
+                <button class="settings-btn" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;" onclick="handleFirebaseLogout()">🚪 Logout</button>
+                <div class="badge-live"><div class="pulse-dot"></div> Live Edge Stream</div>
+            </div>
+        </div>
 
-        <footer>
-            <p>Hosted securely on Cloudflare Pages (*.pages.dev)</p>
-        </footer>
+        <!-- Dashboard View Container -->
+        <div id="home-view">
+            <div class="section-header">
+                <div class="section-title">👥 Biometric & RFID Staff Status Board</div>
+                <div style="font-size: 13px; color: #ffffff; font-weight: 700;" id="currentDateDisplay"></div>
+            </div>
+            <div class="status-board-grid" id="statusBoardGrid"></div>
+            
+            <div class="section-header" style="margin-top: 40px;">
+                <div class="section-title">📊 Today's Active Punch Logs</div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Employee Name</th><th>Check-In 1</th><th>Check-Out 1</th>
+                            <th>Check-In 2</th><th>Check-Out 2</th><th>Break</th><th>Punctuality</th><th>Extra Hours</th><th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="todayLogsTableBody">
+                        <tr><td colspan="10" style="text-align:center; padding: 28px;">Loading biometric logs via secure edge proxy...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="assets/js/auth.js?v=1000.0"></script>
+    <script src="assets/js/app.js?v=1000.0"></script>
 </body>
 </html>
