@@ -3,122 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iyattral Technologies - Fingerprint & RFID Attendance Intelligence</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
-    <!-- CSS Link -->
-    <link rel="stylesheet" href="assets/css/style.css?v=1000.0">
+    <title>Iyattral Technologies - Biometric Attendance Intelligence</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: #1e1b4b;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 {
+            font-size: 1.2rem;
+            margin: 0;
+        }
+        header p {
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            margin: 2px 0 0 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            color: #1e1b4b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Executive Header -->
-        <div class="header">
-            <div class="brand-container">
-                <img src="https://iyattraltechnologies.com/wp-content/uploads/2026/01/WhatsApp-Image-2025-12-24-at-11.45.35-AM.jpeg" alt="Iyattral Logo" class="company-logo" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
-                <div class="title-group">
-                    <h1>IYATTRAL TECHNOLOGIES</h1>
-                    <p>Biometric Attendance Intelligence | Shift: 10:00 AM – 07:00 PM</p>
-                </div>
-            </div>
-            <div class="header-actions">
-                <button class="settings-btn" onclick="openReportsModal()">📊 Reports Center</button>
-                <button class="settings-btn holiday-btn" onclick="openHolidayManagerModal()">⚙️ Manage Holidays</button>
-                <button class="settings-btn" style="background: rgba(16, 185, 129, 0.25); border-color: rgba(16, 185, 129, 0.5); color: #34d399;" onclick="openHardwareModal('enroll')">➕ Enroll Fingerprint</button>
-                <button class="settings-btn" style="background: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.5); color: #fca5a5;" onclick="openHardwareModal('delete')">🗑️ Delete Fingerprint</button>
-                <button class="settings-btn" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;" onclick="handleFirebaseLogout()">🚪 Logout</button>
-                <div class="badge-live"><div class="pulse-dot"></div> Live Edge Stream</div>
-            </div>
-        </div>
 
-        <!-- Dashboard View Container -->
-        <div id="home-view">
-            <div class="section-header">
-                <div class="section-title">👥 Biometric & RFID Staff Status Board</div>
-                <div style="font-size: 13px; color: #ffffff; font-weight: 700;" id="currentDateDisplay"></div>
-            </div>
-            <div class="status-board-grid" id="statusBoardGrid"></div>
+    <header>
+        <div>
+            <h1>IYATTRAL TECHNOLOGIES</h1>
+            <p>Biometric Attendance Intelligence | Shift: 10:00 AM – 07:00 PM</p>
+        </div>
+        <div id="syncStatus" style="font-size: 0.85rem; color: #38bdf8;">Connecting...</div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>📊 Today's Active Punch Logs & Shift Durations</h2>
             
-            <div class="section-header" style="margin-top: 40px;">
-                <div class="section-title">📊 Today's Active Punch Logs</div>
-            </div>
-            <div class="table-container">
-                <table>
+            <div style="overflow-x: auto;">
+                <table id="attendanceTable">
                     <thead>
                         <tr>
-                            <th>ID</th><th>Employee Name</th><th>Check-In 1</th><th>Check-Out 1</th>
-                            <th>Check-In 2</th><th>Check-Out 2</th><th>Break</th><th>Punctuality</th><th>Extra Hours</th><th>Status</th>
+                            <th>ID</th>
+                            <th>Employee Name</th>
+                            <th>Check-In 1</th>
+                            <th>Check-Out 1</th>
+                            <th>Check-In 2</th>
+                            <th>Check-Out 2</th>
+                            <th>Break</th>
+                            <th>Punctuality</th>
+                            <th>Extra Hours</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody id="todayLogsTableBody">
-                        <tr><td colspan="10" style="text-align:center; padding: 28px;">Loading biometric logs via secure edge proxy...</td></tr>
+                    <tbody>
+                        <tr>
+                            <td colspan="10" style="text-align: center; padding: 20px; color: #64748b;">
+                                Loading biometric logs from Cloudflare edge proxy...
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-/**
- * Sends data from the webpage to the Cloudflare Pages Function.
- * @param {string} dataKey - The unique key/identifier for the record.
- * @param {Object|string} dataValue - The data payload to store.
- */
-async function sendDataToCloudflare(dataKey, dataValue) {
-  try {
-    const response = await fetch('/api/save-data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        key: dataKey,
-        value: dataValue
-      })
-    });
-
-    const result = await response.json();
-    
-    if (response.ok) {
-      console.log('Success:', result.message);
-      return true;
-    } else {
-      console.error('Server Error:', result.error);
-      return false;
-    }
-  } catch (networkError) {
-    console.error('Network Request Failed:', networkError);
-    return false;
-  }
-}
-
-// ==========================================
-// Example Usage on Form Submit or Event:
-// ==========================================
-/*
-document.getElementById('myForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const recordKey = "attendance_record_" + Date.now();
-  const recordValue = {
-    employeeId: document.getElementById('empId').value,
-    status: "Checked In",
-    timestamp: new Date().toISOString()
-  };
-
-  const success = await sendDataToCloudflare(recordKey, recordValue);
-  if (success) {
-    alert('Data saved successfully!');
-  }
-});
-*/
-
-    <script src="assets/js/auth.js?v=1000.0"></script>
-    <script src="assets/js/app.js?v=1000.0"></script>
+    <!-- Load Frontend Script -->
+    <script src="/app.js"></script>
 </body>
 </html>
