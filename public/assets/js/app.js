@@ -1,56 +1,34 @@
-window.fetchDashboardData = function() {
-    // Calls Cloudflare Pages Function proxy, masking Hostinger and avoiding CORS
-    fetch('/api/proxy')
-        .then(res => res.json())
-        .then(response => {
-            if (response.status === 'success' && Array.isArray(response.data)) {
-                window.globalRecords = response.data;
-                renderHomeView(window.globalRecords);
-            } else {
-                showTableError("⚠️ Unable to load database logs.");
-            }
-        })
-        .catch(err => {
-            console.error("Network Error:", err);
-            showTableError("⚠️ Network Error: Unable to fetch attendance data.");
-        });
-        async function loadCloudflareAttendanceDashboard() {
+document.addEventListener("DOMContentLoaded", async () => {
+  const tableBody = document.querySelector("#attendanceTable tbody") || document.querySelector("table tbody");
+  
+  if (!tableBody) return;
+
+  tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px;">Fetching data from save_log.php...</td></tr>`;
+
   try {
     const response = await fetch('/api/attendance-sync');
     const result = await response.json();
 
     if (!result.success) {
-      console.error('Failed to load attendance:', result.error);
+      tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: red; padding: 20px;">${result.error}</td></tr>`;
       return;
     }
 
-    const staffRecords = result.data;
-    const tableBody = document.querySelector("table tbody");
-    tableBody.innerHTML = ""; // Clear loading state
+    // Display the exact raw extracted text directly in the table
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="10" style="padding: 20px; font-family: monospace; background: #f8fafc; white-space: pre-wrap; word-break: break-all;">
+          <strong>Successfully Extracted Raw Data:</strong><br><br>
+          ${escapeHtml(result.data)}
+        </td>
+      </tr>
+    `;
 
-    staffRecords.forEach(emp => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${emp.id}</td>
-        <td>${emp.employeeName}</td>
-        <td>${emp.checkIn1}</td>
-        <td>${emp.checkOut1}</td>
-        <td>${emp.checkIn2}</td>
-        <td>${emp.checkOut2}</td>
-        <td>${emp.totalHours}</td>
-        <td><span class="${emp.punctuality === 'Late Arrival' ? 'text-red-500' : 'text-green-500'}">${emp.punctuality}</span></td>
-        <td>${emp.extraHours}</td>
-        <td>${emp.currentStatus}</td>
-      `;
-      tableBody.appendChild(row);
-    });
-
-    console.log("Cloudflare Database Sync Complete & Rendered!");
   } catch (error) {
-    console.error("Error connecting to Cloudflare backend function:", error);
+    tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: red; padding: 20px;">Extraction failed: ${error.message}</td></tr>`;
   }
-}
+});
 
-// Automatically load on page open
-document.addEventListener("DOMContentLoaded", loadCloudflareAttendanceDashboard);
-};
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
