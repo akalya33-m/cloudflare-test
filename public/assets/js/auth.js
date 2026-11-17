@@ -1,13 +1,15 @@
 // assets/js/auth.js
 
 // Firebase Configuration (Replace with your actual Firebase project credentials)
+// Firebase CDN web app configuration
 const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBxGf8yoPx8DPSzzDElnURXtUabYYk3530",
+  authDomain: "iyattral-payroll.firebaseapp.com",
+  projectId: "iyattral-payroll",
+  storageBucket: "iyattral-payroll.firebasestorage.app",
+  messagingSenderId: "1050963524949",
+  appId: "1:1050963524949:web:1bc0137099c57fbaffc3dc",
+  measurementId: "G-KN3MW7VD4P"
 };
 
 // Initialize Firebase
