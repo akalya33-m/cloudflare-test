@@ -64,6 +64,60 @@
         </div>
     </div>
 
+/**
+ * Sends data from the webpage to the Cloudflare Pages Function.
+ * @param {string} dataKey - The unique key/identifier for the record.
+ * @param {Object|string} dataValue - The data payload to store.
+ */
+async function sendDataToCloudflare(dataKey, dataValue) {
+  try {
+    const response = await fetch('/api/save-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        key: dataKey,
+        value: dataValue
+      })
+    });
+
+    const result = await response.json();
+    
+    if (response.ok) {
+      console.log('Success:', result.message);
+      return true;
+    } else {
+      console.error('Server Error:', result.error);
+      return false;
+    }
+  } catch (networkError) {
+    console.error('Network Request Failed:', networkError);
+    return false;
+  }
+}
+
+// ==========================================
+// Example Usage on Form Submit or Event:
+// ==========================================
+/*
+document.getElementById('myForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const recordKey = "attendance_record_" + Date.now();
+  const recordValue = {
+    employeeId: document.getElementById('empId').value,
+    status: "Checked In",
+    timestamp: new Date().toISOString()
+  };
+
+  const success = await sendDataToCloudflare(recordKey, recordValue);
+  if (success) {
+    alert('Data saved successfully!');
+  }
+});
+*/
+
     <script src="assets/js/auth.js?v=1000.0"></script>
     <script src="assets/js/app.js?v=1000.0"></script>
 </body>
