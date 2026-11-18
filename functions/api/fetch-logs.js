@@ -49,7 +49,7 @@ export async function onRequestGet(context) {
       }
     }
 
-    // 3. Save into Cloudflare KV
+    // 3. Save into Cloudflare KV (keeping your existing KV backup)
     const todayDate = new Date().toISOString().split('T')[0];
     const jsonString = JSON.stringify(records);
 
@@ -58,7 +58,35 @@ export async function onRequestGet(context) {
       await env.RATE_LIMIT_KV.put("attendance_json_latest", jsonString);
     }
 
-    // 4. Return structured JSON with 'data' key
+    // 4. Save/Upsert into Cloudflare D1 SQL Database
+    if (env.DB) {
+      for (const rec of records) {
+        await env.DB.prepare(`
+          INSERT INTO attendance (
+            employee_id, employee_name, date, 
+            check_in_1, check_out_1, check_in_2, check_out_2, latest_status
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(employee_id, date) DO UPDATE SET
+            check_in_1 = excluded.check_in_1,
+            check_out_1 = excluded.check_out_1,
+            check_in_2 = excluded.check_in_2,
+            check_out_2 = excluded.check_out_2,
+            latest_status = excluded.latest_status
+        `).bind(
+          rec.employeeId,
+          rec.employeeName,
+          rec.date,
+          rec.checkIn1,
+          rec.checkOut1,
+          rec.checkIn2,
+          rec.checkOut2,
+          rec.latestStatus
+        ).run();
+      }
+    }
+
+    // 5. Return structured JSON with 'data' key
     return new Response(JSON.stringify({ 
       success: true, 
       count: records.length,
