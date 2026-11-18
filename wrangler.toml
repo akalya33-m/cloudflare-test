@@ -5,3 +5,8 @@ pages_build_output_dir = "public"
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
 id = "c06c814cf1ef44379066a40afd56b43d"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "attendance-db"
+database_id = "d5be362c-b080-4359-bf92-12aedf5ca7d4"
