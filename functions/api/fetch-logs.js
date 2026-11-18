@@ -2,33 +2,68 @@ export async function onRequestGet(context) {
   try {
     const { env } = context;
 
-    // Fetch from Hostinger
+    // 1. Fetch raw HTML from Hostinger
     const response = await fetch('https://iyattraltechnologies.com/save_log.php', {
       method: 'GET'
     });
 
-    // Get the response as text first to see what it actually is
-    const responseText = await response.text();
-
     if (!response.ok) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: `Hostinger returned status ${response.status}`,
-        rawResponse: responseText // This will show you the exact error HTML/text from Hostinger
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      });
+      throw new Error(`Hostinger returned status ${response.status}`);
     }
 
-    // Save into Cloudflare KV
+    const htmlText = await response.text();
+
+    // 2. Parse HTML table rows into clean JSON objects
+    const records = [];
+    const rowRegex = /<tr>([\s\S]*?)<\/tr>/gi;
+    let rowMatch;
+    let isHeader = true;
+
+    while ((rowMatch = rowRegex.exec(htmlText)) !== null) {
+      if (isHeader) {
+        isHeader = false;
+        continue;
+      }
+
+      const rowContent = rowMatch[1];
+      const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+      const cells = [];
+      let cellMatch;
+
+      while ((cellMatch = cellRegex.exec(rowContent)) !== null) {
+        const cleanText = cellMatch[1].replace(/<[^>]+>/g, '').trim();
+        cells.push(cleanText);
+      }
+
+      if (cells.length >= 8) {
+        records.push({
+          employeeId: cells[0],
+          employeeName: cells[1],
+          date: cells[2],
+          checkIn1: cells[3] || null,
+          checkOut1: cells[4] || null,
+          checkIn2: cells[5] || null,
+          checkOut2: cells[6] || null,
+          latestStatus: cells[7]
+        });
+      }
+    }
+
+    // 3. Save into Cloudflare KV
     const todayDate = new Date().toISOString().split('T')[0];
+    const jsonString = JSON.stringify(records);
+
     if (env.RATE_LIMIT_KV) {
-      await env.RATE_LIMIT_KV.put(`raw_logs_${todayDate}`, responseText);
-      await env.RATE_LIMIT_KV.put("raw_logs_latest", responseText);
+      await env.RATE_LIMIT_KV.put(`attendance_json_${todayDate}`, jsonString);
+      await env.RATE_LIMIT_KV.put("attendance_json_latest", jsonString);
     }
 
-    return new Response(JSON.stringify({ success: true, logs: responseText }), {
+    // 4. Return structured JSON with 'data' key
+    return new Response(JSON.stringify({ 
+      success: true, 
+      count: records.length,
+      data: records 
+    }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
