@@ -12,17 +12,13 @@ export async function onRequestGet(context) {
       }
     });
 
-    if (!response.ok) {
-      throw new Error(`Origin fetch failed: ${response.status} ${response.statusText}`);
-    }
-
     const html = await response.text();
 
-    // Extract all <table> blocks and pick the one matching Today's Active Punch Logs
-    // (10 columns starting with ID / Employee Name, NOT the historical table which starts with Date)
-    const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-    const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+    // Find script tags or API/PHP URLs referenced in the page
+    const scriptMatches = [...html.matchAll(/<script[^>]*src=["']([^"']+)["'][^>]*>/gi)].map(m => m[1]);
+    const endpointMatches = [...new Set(
+      [...html.matchAll(/["']([^"']*?\.(?:php|json)(?:\?[^"']*)?)["']/gi)].map(m => m[1])
+    )];
 
     const cleanCell = (raw) =>
       raw
@@ -32,43 +28,47 @@ export async function onRequestGet(context) {
         .replace(/\s+/g, " ")
         .trim();
 
-    let todayRows = [];
+    const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+
+    const allTables = [];
+    const todayRows = [];
     let tableMatch;
 
     while ((tableMatch = tableRegex.exec(html)) !== null) {
-      const tableHtml = tableMatch[1];
       const parsedRows = [];
       let rowMatch;
-
-      while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
+      while ((rowMatch = rowRegex.exec(tableMatch[1])) !== null) {
         const cells = [];
         let cellMatch;
         while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
           cells.push(cleanCell(cellMatch[1]));
         }
-        if (cells.length > 0) {
-          parsedRows.push(cells);
-        }
+        if (cells.length > 0) parsedRows.push(cells);
       }
 
+      allTables.push({
+        rowCount: parsedRows.length,
+        firstRow: parsedRows[0] || [],
+        sampleRow: parsedRows[1] || []
+      });
+
       if (parsedRows.length === 0) continue;
+      const headerJoined = parsedRows[0].join(" ").toLowerCase().replace(/[^a-z0-9 ]/g, " ");
 
-      const headerJoined = parsedRows[0].join(" ").toLowerCase();
-      const isTodayTable =
-        headerJoined.includes("employee name") &&
-        headerJoined.includes("check-in 1") &&
-        !headerJoined.includes("9-hr compliance");
-
-      if (isTodayTable) {
+      if (
+        (headerJoined.includes("employee name") || headerJoined.includes("emp name")) &&
+        (headerJoined.includes("check in 1") || headerJoined.includes("checkin 1")) &&
+        !headerJoined.includes("9 hr compliance") &&
+        !headerJoined.includes("compliance")
+      ) {
         for (let i = 1; i < parsedRows.length; i++) {
           const c = parsedRows[i];
           const first = (c[0] || "").toLowerCase();
           const second = (c[1] || "").toLowerCase();
-
-          // Skip empty rows, header repeats, or loading placeholders
-          if (!c[0] || !c[1]) continue;
-          if (first === "id" || second === "employee name") continue;
-          if (c.join(" ").toLowerCase().includes("loading today's biometric logs")) continue;
+          if (!c[0] || !c[1] || first === "id" || second === "employee name") continue;
+          if (c.join(" ").toLowerCase().includes("loading")) continue;
 
           todayRows.push({
             id: c[0],
@@ -83,16 +83,21 @@ export async function onRequestGet(context) {
             status: c[9] || "Active"
           });
         }
-        break;
       }
     }
 
     return new Response(JSON.stringify({
-      success: true,
-      source: SOURCE_URL,
+      success: response.ok,
+      status: response.status,
       count: todayRows.length,
-      data: todayRows
-    }), {
+      data: todayRows,
+      debug: {
+        tablesFound: allTables,
+        scripts: scriptMatches,
+        detectedEndpoints: endpointMatches,
+        htmlPreview: html.slice(0, 600)
+      }
+    }, null, 2), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
@@ -101,7 +106,7 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({
       success: false,
       error: err.message
-    }), {
+    }, null, 2), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
