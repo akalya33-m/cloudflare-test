@@ -1,48 +1,78 @@
 export async function onRequestGet(context) {
-  const { env } = context;
+  // Point directly to the subdomain or its underlying PHP data endpoint (e.g., /get_logs.php or /fetch.php)
+  const TARGET_URL = "https://iyattid.iyattraltechnologies.com/";
 
   try {
-    // 1. Fetch HTML directly from the new subdomain (Server-to-Server bypasses CORS)
-    const response = await fetch("https://iyattid.iyattraltechnologies.com/", {
+    // Server-to-Server request with standard browser headers to pass Hostinger's security filter
+    const response = await fetch(TARGET_URL, {
+      method: "GET",
       headers: {
-        "User-Agent": "Cloudflare-Pages-Sync/1.0",
-        "Accept": "text/html"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml,application/json;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://iyattid.iyattraltechnologies.com/",
+        "Cache-Control": "no-cache"
       }
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch webpage: ${response.status} ${response.statusText}`);
+      throw new Error(`Hostinger origin returned ${response.status}: ${response.statusText}`);
     }
 
-    const html = await response.text();
+    const rawBody = await response.text();
+    const contentType = response.headers.get("content-type") || "";
 
-    // 2. Parse the HTML table rows (matches standard <tr>...</tr> structure)
-    const rows = [];
+    // Case 1: If Hostinger returns JSON directly
+    if (contentType.includes("application/json") || rawBody.trim().startsWith("[") || rawBody.trim().startsWith("{")) {
+      const jsonData = JSON.parse(rawBody);
+      return new Response(JSON.stringify({
+        success: true,
+        mode: "server-to-server-json",
+        data: jsonData
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    // Case 2: Extract rows from HTML table
+    const records = [];
     const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
     const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
 
     let rowMatch;
-    while ((rowMatch = rowRegex.exec(html)) !== null) {
+    while ((rowMatch = rowRegex.exec(rawBody)) !== null) {
       const cells = [];
       let cellMatch;
       while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
-        // Strip inner HTML tags and trim whitespace
-        const cleanText = cellMatch[1].replace(/<[^>]*>/g, "").trim();
+        const cleanText = cellMatch[1].replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
         cells.push(cleanText);
       }
 
-      // Skip empty rows or header rows (adjust column count check based on your table)
       if (cells.length >= 4 && cells[0].toLowerCase() !== "id" && cells[0].toLowerCase() !== "emp id") {
-        rows.push(cells);
+        records.push({
+          id: cells[0],
+          employee_id: cells[0],
+          name: cells[1],
+          employee_name: cells[1],
+          date: cells[2],
+          check_in_1: cells[3] || "-",
+          check_out_1: cells[4] || "-",
+          check_in_2: cells[5] || "-",
+          check_out_2: cells[6] || "-",
+          status: cells[7] || "N/A",
+          current_status: cells[7] || "N/A"
+        });
       }
     }
 
-    // 3. Return extracted data first to verify structure before D1 insertion
     return new Response(JSON.stringify({
       success: true,
-      source: "https://iyattid.iyattraltechnologies.com/",
-      total_extracted: rows.length,
-      data: rows
+      mode: "server-to-server-html",
+      total_extracted: records.length,
+      data: records,
+      // Diagnostic preview: shows if Hostinger returned a JS challenge or empty shell when 0 rows found
+      debug_snippet: records.length === 0 ? rawBody.slice(0, 500) : undefined
     }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
