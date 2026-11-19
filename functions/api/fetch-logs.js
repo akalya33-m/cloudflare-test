@@ -1,102 +1,79 @@
 export async function onRequestGet(context) {
-  const SOURCE_URL = "https://iyattid.iyattraltechnologies.com/";
+  const BASE_URL = "https://iyattid.iyattraltechnologies.com";
+
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml,application/json,*/*;q=0.8",
+    "Referer": BASE_URL + "/",
+    "Cache-Control": "no-cache"
+  };
 
   try {
-    const response = await fetch(SOURCE_URL, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache"
-      }
-    });
+    // 1. Fetch main HTML
+    const pageRes = await fetch(BASE_URL + "/", { headers });
+    const html = await pageRes.text();
 
-    const html = await response.text();
+    // 2. Collect script URLs (fallback to /assets/js/app.js)
+    const scriptSrcs = [...html.matchAll(/<script[^>]*src=["']([^"']+)["'][^>]*>/gi)]
+      .map(m => m[1])
+      .filter(src => !src.startsWith("http") || src.startsWith(BASE_URL));
 
-    // Find script tags or API/PHP URLs referenced in the page
-    const scriptMatches = [...html.matchAll(/<script[^>]*src=["']([^"']+)["'][^>]*>/gi)].map(m => m[1]);
-    const endpointMatches = [...new Set(
-      [...html.matchAll(/["']([^"']*?\.(?:php|json)(?:\?[^"']*)?)["']/gi)].map(m => m[1])
-    )];
+    if (!scriptSrcs.some(s => s.includes("app.js"))) {
+      scriptSrcs.push("assets/js/app.js");
+    }
 
-    const cleanCell = (raw) =>
-      raw
-        .replace(/<[^>]*>/g, " ")
-        .replace(/&nbsp;/gi, " ")
-        .replace(/&amp;/gi, "&")
-        .replace(/\s+/g, " ")
-        .trim();
+    // 3. Scan scripts for API / PHP / JSON endpoints
+    const candidateEndpoints = new Set();
+    for (const rawSrc of scriptSrcs) {
+      const cleanSrc = rawSrc.split("?")[0];
+      const scriptUrl = cleanSrc.startsWith("http")
+        ? cleanSrc
+        : `${BASE_URL}/${cleanSrc.replace(/^\/+/, "")}`;
 
-    const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-    const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+      try {
+        const sRes = await fetch(scriptUrl, { headers });
+        if (!sRes.ok) continue;
+        const jsCode = await sRes.text();
 
-    const allTables = [];
-    const todayRows = [];
-    let tableMatch;
-
-    while ((tableMatch = tableRegex.exec(html)) !== null) {
-      const parsedRows = [];
-      let rowMatch;
-      while ((rowMatch = rowRegex.exec(tableMatch[1])) !== null) {
-        const cells = [];
-        let cellMatch;
-        while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
-          cells.push(cleanCell(cellMatch[1]));
+        const urlMatches = [
+          ...jsCode.matchAll(/["'`]((?:https?:\/\/[^"'`]+)?\/?[a-zA-Z0-9_./-]*\.(?:php|json)(?:\?[^"'`]*)?)["'`]/gi)
+        ];
+        for (const m of urlMatches) {
+          const ep = m[1];
+          if (ep.includes("firebase") || ep.includes("gstatic") || ep.includes("googleapis")) continue;
+          const fullEp = ep.startsWith("http") ? ep : `${BASE_URL}/${ep.replace(/^\/+/, "")}`;
+          candidateEndpoints.add(fullEp);
         }
-        if (cells.length > 0) parsedRows.push(cells);
+      } catch (_) {
+        // Ignore single script fetch errors
       }
+    }
 
-      allTables.push({
-        rowCount: parsedRows.length,
-        firstRow: parsedRows[0] || [],
-        sampleRow: parsedRows[1] || []
-      });
-
-      if (parsedRows.length === 0) continue;
-      const headerJoined = parsedRows[0].join(" ").toLowerCase().replace(/[^a-z0-9 ]/g, " ");
-
-      if (
-        (headerJoined.includes("employee name") || headerJoined.includes("emp name")) &&
-        (headerJoined.includes("check in 1") || headerJoined.includes("checkin 1")) &&
-        !headerJoined.includes("9 hr compliance") &&
-        !headerJoined.includes("compliance")
-      ) {
-        for (let i = 1; i < parsedRows.length; i++) {
-          const c = parsedRows[i];
-          const first = (c[0] || "").toLowerCase();
-          const second = (c[1] || "").toLowerCase();
-          if (!c[0] || !c[1] || first === "id" || second === "employee name") continue;
-          if (c.join(" ").toLowerCase().includes("loading")) continue;
-
-          todayRows.push({
-            id: c[0],
-            name: c[1],
-            check_in_1: c[2] || "-",
-            check_out_1: c[3] || "-",
-            check_in_2: c[4] || "-",
-            check_out_2: c[5] || "-",
-            lunch_break: c[6] || "-",
-            punctuality: c[7] || "-",
-            extra_hours: c[8] || "-",
-            status: c[9] || "Active"
-          });
-        }
+    // 4. Query discovered endpoints server-to-server
+    const endpointResults = [];
+    for (const epUrl of candidateEndpoints) {
+      try {
+        const epRes = await fetch(epUrl, { headers });
+        const text = await epRes.text();
+        endpointResults.push({
+          url: epUrl,
+          status: epRes.status,
+          bodyPreview: text.slice(0, 1500)
+        });
+      } catch (e) {
+        endpointResults.push({
+          url: epUrl,
+          error: e.message
+        });
       }
     }
 
     return new Response(JSON.stringify({
-      success: response.ok,
-      status: response.status,
-      count: todayRows.length,
-      data: todayRows,
-      debug: {
-        tablesFound: allTables,
-        scripts: scriptMatches,
-        detectedEndpoints: endpointMatches,
-        htmlPreview: html.slice(0, 600)
-      }
+      success: true,
+      count: 0,
+      data: [],
+      discoveredEndpoints: [...candidateEndpoints],
+      endpointResults
     }, null, 2), {
       status: 200,
       headers: { "Content-Type": "application/json" }
