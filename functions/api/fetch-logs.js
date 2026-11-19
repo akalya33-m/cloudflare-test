@@ -230,7 +230,7 @@ export async function onRequestGet(context) {
         )
       );
 
-      await env.DB.batch(batch);
+      await env.DB1.batch(batch);
       storedCount = batch.length;
     }
 
