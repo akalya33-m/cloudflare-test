@@ -1,87 +1,651 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Frontend Source Inspector</title>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #0f172a;
-      color: #f8fafc;
-      margin: 0;
-      padding: 20px;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    button:hover { background: #1d4ed8; }
-    #status { color: #94a3b8; font-size: 14px; }
-    pre {
-      background: #1e293b;
-      padding: 16px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: Consolas, Monaco, monospace;
-      font-size: 13px;
-      line-height: 1.5;
-      color: #38bdf8;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iyattral Technologies - Attendance Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <!-- Existing Stylesheet (optional if you want classic styles below to take over) -->
+    <link rel="stylesheet" href="assets/css/style.css?v=1000.1">
+
+    <style>
+        /* Classic Old-Version Admin UI Overrides */
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #eef1f5;
+            color: #222222;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        /* Classic Top Bar */
+        .header {
+            background: #1f2d3d;
+            color: #ffffff;
+            padding: 12px 18px;
+            border-radius: 4px;
+            border-bottom: 3px solid #0d6efd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .company-logo {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: #ffffff;
+            padding: 2px;
+            border: 1px solid #cbd5e1;
+        }
+        .title-group h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .title-group p {
+            margin: 2px 0 0;
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .settings-btn {
+            background: #f8f9fa;
+            color: #212529;
+            border: 1px solid #adb5bd;
+            padding: 6px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .settings-btn:hover {
+            background: #e2e6ea;
+        }
+        .badge-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #14532d;
+            color: #dcfce7;
+            border: 1px solid #22c55e;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+        }
+
+        /* Back Navigation */
+        .nav-back {
+            margin: 12px 0;
+        }
+        .btn-back {
+            background: #ffffff;
+            color: #1f2d3d;
+            border: 1px solid #94a3b8;
+            padding: 6px 12px;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-back:hover {
+            background: #f1f5f9;
+        }
+
+        /* Section Boxes */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-left: 4px solid #1f2d3d;
+            padding: 10px 14px;
+            margin-top: 18px;
+            margin-bottom: 12px;
+            border-radius: 3px;
+        }
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1f2d3d;
+        }
+
+        /* Status Cards Grid */
+        .status-board-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px;
+        }
+        .status-board-grid > div,
+        .status-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 3px;
+            padding: 12px;
+        }
+
+        /* Classic Tables */
+        .table-container {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 3px;
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+        th, td {
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            text-align: left;
+        }
+        tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        /* Profile View */
+        .profile-header {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-left: 4px solid #0d6efd;
+            padding: 14px 16px;
+            border-radius: 3px;
+            margin-bottom: 14px;
+        }
+        .profile-title h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1e293b;
+        }
+        .profile-title p {
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: #475569;
+        }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .kpi-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-top: 3px solid #475569;
+            padding: 12px;
+            border-radius: 3px;
+        }
+        .kpi-card.green { border-top-color: #198754; }
+        .kpi-card.red { border-top-color: #dc3545; }
+        .kpi-card.orange { border-top-color: #fd7e14; }
+        .kpi-card.purple { border-top-color: #6f42c1; }
+        .kpi-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+        }
+        .kpi-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+            margin: 6px 0 4px;
+        }
+        .kpi-subtext {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        /* Analytics & Calendar */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .analytics-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 3px;
+            padding: 14px;
+        }
+        .calendar-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cal-nav-btn {
+            background: #f1f5f9;
+            border: 1px solid #94a3b8;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .plot-legend-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 11px;
+            color: #334155;
+        }
+        .plot-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .plot-legend-marker {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+        }
+        .cal-day-name {
+            font-size: 11px;
+            font-weight: 700;
+            background: #e2e8f0;
+            padding: 5px 2px;
+            border: 1px solid #cbd5e1;
+        }
+
+        /* Classic Modals */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #ffffff;
+            color: #1e293b;
+            border: 1px solid #94a3b8;
+            border-radius: 4px;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: #e2e8f0;
+            border: 1px solid #94a3b8;
+            border-radius: 3px;
+            width: 26px;
+            height: 26px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .popup-list {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            border-radius: 3px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="header">
-    <div>
-      <h2 style="margin:0;">Extracted Source: iyattid.iyattraltechnologies.com</h2>
-      <span id="status">Fetching server-to-server...</span>
+    <div class="container">
+        <!-- Classic Header with Home Page Hardware Controls -->
+        <div class="header">
+            <div class="brand-container">
+                <img src="https://iyattraltechnologies.com/wp-content/uploads/2026/01/WhatsApp-Image-2025-12-24-at-11.45.35-AM.jpeg" alt="Iyattral Logo" class="company-logo" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
+                <div class="title-group">
+                    <h1>IYATTRAL TECHNOLOGIES</h1>
+                    <p>Biometric &amp; RFID Attendance System | Shift: 10:00 AM – 07:00 PM</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="settings-btn" onclick="openReportsModal()">Reports Center</button>
+                <button class="settings-btn holiday-btn" onclick="openHolidayManagerModal()">Manage Holidays</button>
+                <button class="settings-btn" onclick="openHardwareModal('enroll')">Enroll Fingerprint</button>
+                <button class="settings-btn" onclick="openHardwareModal('delete')">Delete Fingerprint</button>
+                <button class="settings-btn" onclick="handleFirebaseLogout()">Logout</button>
+                <div class="badge-live">
+                    <span class="pulse-dot"></span> Live IoT
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="nav-back" id="navBackContainer">
+            <button class="btn-back" onclick="switchToHomeView(); return false;">
+                &larr; Back to Live Dashboard
+            </button>
+        </div>
+
+        <!-- VIEW 1: HOME DASHBOARD -->
+        <div id="home-view">
+            <div class="section-header">
+                <div class="section-title">Biometric &amp; RFID Staff Status Board</div>
+                <div style="font-size: 12px; color: #334155; font-weight: 700;" id="currentDateDisplay"></div>
+            </div>
+            <div class="status-board-grid" id="statusBoardGrid"></div>
+
+            <div class="section-header" style="margin-top: 24px;">
+                <div class="section-title">Today's Active Punch Logs &amp; Shift Durations</div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Employee Name</th>
+                            <th>Check-In 1</th>
+                            <th>Check-Out 1</th>
+                            <th>Check-In 2</th>
+                            <th>Check-Out 2</th>
+                            <th>Lunch / Break</th>
+                            <th>Punctuality</th>
+                            <th>Extra Hours</th>
+                            <th>Current Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="todayLogsTableBody">
+                        <tr><td colspan="10" style="text-align:center; padding: 20px; color: #64748b;">Loading today's biometric logs from database...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW 2: DRILL-DOWN PROFILE VIEW -->
+        <div id="profile-view" style="display: none;">
+            <div class="profile-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div class="profile-title">
+                    <h2 id="profileEmpName">Employee Name</h2>
+                    <p id="profileEmpMeta">Employee ID: --</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 6px; align-items: center; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 5px 8px; border-radius: 3px;">
+                        <select id="exportRangeSelect" style="padding: 5px; border-radius: 3px; border: 1px solid #94a3b8; font-weight: 700; font-size: 12px; background: #ffffff; color: #1e293b;">
+                            <option value="month">Current Month Report</option>
+                            <option value="year">Current Year Report</option>
+                            <option value="all">All-Time History</option>
+                        </select>
+                        <button onclick="downloadCustomEmployeeExcelReport()" style="background: #198754; color: #ffffff; border: 1px solid #157347; padding: 5px 10px; border-radius: 3px; font-weight: 700; cursor: pointer; font-size: 12px;">Download Excel</button>
+                    </div>
+                    <div id="profileShiftBadge" class="status-pill pill-green" style="background: #e2e8f0; color: #1e293b; border: 1px solid #94a3b8; padding: 5px 10px; border-radius: 3px; font-size: 12px; font-weight: 700;">Active Profile</div>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpi-grid">
+                <div class="kpi-card green">
+                    <div class="kpi-label" id="profSalaryLabel">Pro-Rata Salary (Tally Dynamic)</div>
+                    <div class="kpi-value" id="profSalary">&#8377;0</div>
+                    <div class="kpi-subtext" id="profSalarySub">Based on month days tally</div>
+                </div>
+                <div class="kpi-card red" onclick="openLeaveModal()" style="cursor: pointer;">
+                    <div class="kpi-label">Leaves Breakdown (Click to View)</div>
+                    <div class="kpi-value" id="profLeavesMonth">0 Days</div>
+                    <div class="kpi-subtext" id="profLeavesYear">Yearly Total: 0 Days</div>
+                </div>
+                <div class="kpi-card orange">
+                    <div class="kpi-label">Extra Hours (Overtime)</div>
+                    <div class="kpi-value" id="profOvertimeMonth">0 hrs</div>
+                    <div class="kpi-subtext" id="profOvertimeBreakdown">Day: 0h | Wk: 0h | Mo: 0h | Yr: 0h</div>
+                </div>
+                <div class="kpi-card purple">
+                    <div class="kpi-label">Late Arrival Duration</div>
+                    <div class="kpi-value" id="profLateMonth">0 mins</div>
+                    <div class="kpi-subtext" id="profLateBreakdown">Day: 0m | Wk: 0m | Mo: 0m | Yr: 0m</div>
+                </div>
+            </div>
+
+            <!-- Calendar & Analytics Grid -->
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <div class="calendar-header-bar">
+                        <div style="font-weight: 700; font-size: 15px; color:#1e293b;" id="calendarTitle">Attendance Calendar</div>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="cal-nav-btn" onclick="changeCalendarMonth(-1)">&laquo; Prev</button>
+                            <button class="cal-nav-btn" onclick="changeCalendarMonth(1)">Next &raquo;</button>
+                        </div>
+                    </div>
+
+                    <div class="plot-legend-bar" style="margin-top: 10px;">
+                        <div class="plot-legend-group">
+                            <div class="plot-legend-item"><span class="plot-legend-marker" style="background:#198754;"></span> Present (&ge;9h)</div>
+                            <div class="plot-legend-item"><span class="plot-legend-marker" style="background:#20c997;"></span> Partial (&lt;9h)</div>
+                            <div class="plot-legend-item"><span class="plot-legend-marker" style="background:#0d6efd;"></span> Holiday</div>
+                            <div class="plot-legend-item"><span class="plot-legend-marker" style="background:#dc3545;"></span> Leave</div>
+                            <div class="plot-legend-item"><span class="plot-legend-marker" style="background:#6c757d;"></span> Sunday</div>
+                        </div>
+                    </div>
+
+                    <div class="calendar-grid" style="margin-top: 10px;">
+                        <div class="cal-day-name">Sun</div><div class="cal-day-name">Mon</div><div class="cal-day-name">Tue</div><div class="cal-day-name">Wed</div><div class="cal-day-name">Thu</div><div class="cal-day-name">Fri</div><div class="cal-day-name">Sat</div>
+                    </div>
+                    <div class="calendar-grid" id="calendarDaysGrid" style="margin-top: 4px;"></div>
+                </div>
+
+                <div class="analytics-card">
+                    <div class="section-header" style="margin-top: 0; margin-bottom: 12px;">
+                        <div style="font-weight: 700; font-size: 15px; color:#1e293b;">Late Arrivals by Month</div>
+                    </div>
+                    <canvas id="profileLateMonthlyChart" height="145"></canvas>
+                </div>
+            </div>
+
+            <!-- Historical Table -->
+            <div class="table-container">
+                <div style="padding: 10px 14px; font-weight: 700; font-size: 14px; background: #f8fafc; border-bottom: 1px solid #cbd5e1;">Historical Biometric Punch Logs</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Check-In 1</th>
+                            <th>Check-Out 1</th>
+                            <th>Check-In 2</th>
+                            <th>Check-Out 2</th>
+                            <th>Total Hours</th>
+                            <th>9-Hr Compliance</th>
+                            <th>Punctuality</th>
+                            <th>Overtime</th>
+                        </tr>
+                    </thead>
+                    <tbody id="profileTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <button onclick="copyCode()">Copy Code</button>
-  </div>
 
-  <pre id="code-box">Loading...</pre>
+    <!-- REPORTS CENTER MODAL -->
+    <div class="modal-overlay" id="reportsCenterModal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close" onclick="closeReportsModal()">&times;</button>
+            <h3 style="margin-top:0; font-size:17px; color:#1e293b; font-weight:700;">Attendance Reports Center</h3>
+            <p style="font-size:12px; color:#475569;">Select report parameters for Excel export:</p>
 
-  <script>
-    async function loadSource() {
-      const statusEl = document.getElementById("status");
-      const codeBox = document.getElementById("code-box");
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+                <div>
+                    <label style="font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase;">Report Category</label>
+                    <select id="reportTypeSelect" onchange="toggleReportFilters()" style="width: 100%; padding: 8px; border-radius: 3px; border: 1px solid #94a3b8; font-weight: 600; font-size: 13px; margin-top: 4px; background: #ffffff;">
+                        <option value="master_summary">All-Employee Master Payroll Summary</option>
+                        <option value="leave_absentee">Leave &amp; Absenteeism Report (Who Took Leave)</option>
+                        <option value="late_audit">Late Arrivals &amp; Punctuality Report</option>
+                        <option value="overtime_audit">Overtime &amp; Extra Hours Report</option>
+                        <option value="individual">Individual Employee Detailed Report</option>
+                    </select>
+                </div>
 
-      try {
-        const res = await fetch("/api/fetch-logs");
-        const data = await res.json();
+                <div id="individualEmpWrapper" style="display: none;">
+                    <label style="font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase;">Select Employee</label>
+                    <select id="reportEmpId" style="width: 100%; padding: 8px; border-radius: 3px; border: 1px solid #94a3b8; font-weight: 600; font-size: 13px; margin-top: 4px; background: #ffffff;">
+                        <option value="1">KABILAN R (ID: 1)</option>
+                        <option value="2">GOPIKA M (ID: 2)</option>
+                        <option value="3">AKALYA M (ID: 3)</option>
+                    </select>
+                </div>
 
-        statusEl.textContent = `HTTP Status: ${data.status || "Error"} | Success: ${data.success}`;
-        // textContent safely renders raw HTML tags as readable text instead of executing them
-        codeBox.textContent = data.source_code || data.error || "No response body returned.";
-      } catch (err) {
-        statusEl.textContent = "Fetch Failed";
-        codeBox.textContent = err.message;
-      }
-    }
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase;">Month</label>
+                        <select id="reportMonth" style="width: 100%; padding: 8px; border-radius: 3px; border: 1px solid #94a3b8; font-weight: 600; font-size: 13px; margin-top: 4px; background: #ffffff;">
+                            <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+                            <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+                            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+                            <option value="10">October</option><option value="11" selected>November</option><option value="12">December</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase;">Year</label>
+                        <select id="reportYear" style="width: 100%; padding: 8px; border-radius: 3px; border: 1px solid #94a3b8; font-weight: 600; font-size: 13px; margin-top: 4px; background: #ffffff;">
+                            <option value="2026" selected>2026</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                </div>
 
-    function copyCode() {
-      const text = document.getElementById("code-box").textContent;
-      navigator.clipboard.writeText(text);
-      alert("Source code copied to clipboard!");
-    }
+                <button onclick="generateAdvancedReport()" style="background: #198754; color: #ffffff; border: 1px solid #157347; padding: 10px; border-radius: 3px; font-weight: 700; cursor: pointer; font-size: 13px; margin-top: 6px;">
+                    Download Excel Report
+                </button>
+            </div>
+        </div>
+    </div>
 
-    loadSource();
-  </script>
+    <!-- HARDWARE ACTION MODAL -->
+    <div class="modal-overlay" id="hardwareActionModal" style="display: none;">
+        <div class="modal-content" style="max-width: 420px; text-align: center;">
+            <button class="modal-close" onclick="closeHardwareModal()">&times;</button>
+            <h3 id="hardwareModalTitle" style="margin-top:0; font-size:17px; color:#1e293b; font-weight:700;">Hardware Process</h3>
+            <p id="hardwareModalSubtitle" style="font-size:12px; color:#475569; margin-bottom: 14px;">Enter Employee ID for MQTT Command:</p>
 
+            <input type="number" id="modalHardwareEmpId" placeholder="Enter Employee ID (e.g. 1)" style="width: 100%; padding: 9px 12px; border-radius: 3px; border: 1px solid #94a3b8; font-weight: 600; font-size: 14px; text-align: center; margin-bottom: 14px; background: #ffffff; color: #1e293b;">
+
+            <button id="modalExecuteBtn" onclick="executeHardwareModalAction()" style="width: 100%; padding: 10px; border-radius: 3px; font-weight: 700; font-size: 13px; border: 1px solid #1e293b; background: #1f2d3d; color: #ffffff; cursor: pointer;">Execute Command</button>
+
+            <div id="modalHardwareResponseMsg" style="margin-top: 12px; font-size: 12px; font-weight: 700; display: none; padding: 10px; border-radius: 3px;"></div>
+        </div>
+    </div>
+
+    <!-- LEAVE POPUP MODAL -->
+    <div class="modal-overlay" id="leaveModal" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeLeaveModal()">&times;</button>
+            <h3 style="margin-top:0; font-size:17px; color:#1e293b; font-weight:700;">Leave Dates Record</h3>
+            <p style="font-size:12px; color:#475569;">Exact absent dates (excluding Sundays &amp; Holidays):</p>
+            <div class="popup-list" id="leaveDateListContainer"></div>
+        </div>
+    </div>
+
+    <!-- ADMIN NOTIFICATION MODAL -->
+    <div class="modal-overlay" id="adminAlertModal" style="display: none;">
+        <div class="modal-content" style="max-width: 440px; text-align: center;">
+            <button class="modal-close" onclick="closeAdminAlertModal()">&times;</button>
+            <h3 style="margin-top:0; font-size:17px; color:#b45309; font-weight:700;">Checkout Missing Alert</h3>
+            <p id="adminAlertMessage" style="font-size: 13px; color: #334155; line-height: 1.5; margin: 14px 0 20px;"></p>
+            <button onclick="closeAdminAlertModal()" style="background: #d97706; color: #ffffff; border: 1px solid #b45309; padding: 8px 20px; border-radius: 3px; font-weight: 700; cursor: pointer; font-size: 13px;">Acknowledge &amp; Close</button>
+        </div>
+    </div>
+
+    <!-- GLOBAL HOLIDAY MANAGER MODAL -->
+    <div class="modal-overlay" id="holidayManagerModal" style="display: none;">
+        <div class="modal-content" style="max-width: 540px;">
+            <button class="modal-close" onclick="closeHolidayManagerModal()">&times;</button>
+            <h3 style="margin-top:0; font-size:17px; color:#1e293b; font-weight:700;">Manage Company Holiday Calendar</h3>
+            <p style="font-size:12px; color:#475569;">Upload your Excel (.xlsx) or CSV file (Column A: <code>YYYY-MM-DD</code>, Column B: <code>Holiday Name</code>):</p>
+
+            <div id="holidayUploadForm" style="display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap;">
+                <div id="fileInputWrapper" style="display: flex; gap: 8px; flex: 1; align-items: center;">
+                    <input type="file" id="holidayFileinput" accept=".xlsx, .xls, .csv" onchange="handleFileSelected(this)" style="padding: 6px; border-radius: 3px; border: 1px solid #94a3b8; font-size: 12px; flex: 1; background: #f8fafc;">
+                </div>
+
+                <div id="fileActiveState" style="display: none; align-items: center; justify-content: space-between; width: 100%; background: #f1f5f9; padding: 8px 10px; border-radius: 3px; border: 1px solid #cbd5e1;">
+                    <span id="selectedFileName" style="font-size: 12px; font-weight: 700; color: #334155;">file.xlsx</span>
+                    <button type="button" onclick="removeSelectedHolidayFile()" style="background: #dc3545; color: #ffffff; border: 1px solid #b02a37; padding: 4px 10px; border-radius: 3px; font-weight: 700; font-size: 12px; cursor: pointer;">Remove File</button>
+                </div>
+            </div>
+
+            <div id="uploadStatusMsg" style="margin-top: 10px; font-size: 12px; font-weight: 700; display: none;"></div>
+
+            <div style="margin-top: 16px; font-weight: 700; font-size: 13px; color: #1e293b;">Live Verification List (Extracted Leave Days):</div>
+            <div class="popup-list" id="holidayListContainer">
+                <div style="padding:12px; text-align:center; color:#64748b;">No holiday file uploaded yet.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE LOGIN MODAL -->
+    <div class="modal-overlay" id="firebaseLoginModal" style="display: flex; z-index: 9999; background: rgba(15, 23, 42, 0.85);">
+        <div class="modal-content" style="max-width: 380px; text-align: center;">
+            <h3 style="margin-top:0; font-size: 18px; color: #1f2d3d; font-weight: 700;">Admin Authentication</h3>
+            <p style="font-size: 12px; color: #475569; margin-bottom: 16px;">Sign in with authorized Firebase credentials.</p>
+
+            <form id="loginForm" onsubmit="handleFirebaseLogin(event)" style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+                <div>
+                    <label style="font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase;">Admin Email</label>
+                    <input type="email" id="loginEmail" required placeholder="admin@iyattraltechnologies.com" style="width: 100%; padding: 8px 10px; border-radius: 3px; border: 1px solid #94a3b8; font-size: 13px; margin-top: 4px;">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase;">Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••" style="width: 100%; padding: 8px 10px; border-radius: 3px; border: 1px solid #94a3b8; font-size: 13px; margin-top: 4px;">
+                </div>
+                <div id="loginErrorMsg" style="color: #dc3545; font-size: 12px; font-weight: 700; display: none;"></div>
+                <button type="submit" id="loginSubmitBtn" style="background: #1f2d3d; color: #ffffff; border: 1px solid #0f172a; padding: 9px; border-radius: 3px; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 4px;">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts with Cache-Buster Version -->
+    <script src="assets/js/auth.js?v=1000.1"></script>
+    <script src="assets/js/app.js?v=1000.1"></script>
 </body>
 </html>
