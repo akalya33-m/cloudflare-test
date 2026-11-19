@@ -23,7 +23,7 @@
             margin: 0 auto;
         }
 
-        /* Header matching reference UI */
+        /* Header */
         .header {
             background: linear-gradient(90deg, #1e1b4b 0%, #2e1065 55%, #3b0764 100%);
             border: 1px solid rgba(168, 85, 247, 0.25);
@@ -101,7 +101,7 @@
             background: #34d399;
         }
 
-        /* Section Title Row */
+        /* Section Row */
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -122,7 +122,7 @@
             color: #cbd5e1;
         }
 
-        /* Staff Cards Grid */
+        /* Status Cards */
         .status-board-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
@@ -141,9 +141,8 @@
         }
         .staff-card.checkout-two-alert {
             background: linear-gradient(145deg, #fef2f2 0%, #fee2e2 100%);
-            border-left-color: #ef4444;
             border: 1px solid #f87171;
-            border-left-width: 5px;
+            border-left: 5px solid #ef4444;
         }
         .staff-name {
             font-size: 15px;
@@ -180,7 +179,7 @@
             font-size: 13px;
         }
 
-        /* Punch Logs Table */
+        /* Table */
         .table-container {
             background: #f8fafc;
             color: #0f172a;
@@ -200,13 +199,13 @@
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.4px;
-            padding: 14px 12px;
+            padding: 14px 14px;
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
             white-space: nowrap;
         }
         tbody td {
-            padding: 14px 12px;
+            padding: 14px 14px;
             border-bottom: 1px solid #e2e8f0;
             font-weight: 600;
             color: #1e293b;
@@ -219,8 +218,6 @@
         }
         .col-emp-name { color: #2563eb; font-weight: 700; }
         .col-checkin  { color: #059669; font-weight: 700; }
-        .col-late     { color: #dc2626; font-weight: 700; }
-        .col-early    { color: #059669; font-weight: 700; }
 
         /* Modal */
         .modal-overlay {
@@ -285,32 +282,28 @@
         </div>
 
         <div class="section-header" style="margin-top: 28px;">
-            <div class="section-title">📊 Today's Active Punch Logs &amp; Shift Durations</div>
+            <div class="section-title">📊 Today's Active Punch Logs</div>
         </div>
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Employee Name</th>
+                        <th>Name</th>
                         <th>Check-In 1</th>
                         <th>Check-Out 1</th>
                         <th>Check-In 2</th>
                         <th>Check-Out 2</th>
-                        <th>🍽️ Lunch / Break</th>
-                        <th>Punctuality</th>
-                        <th>Extra Hours</th>
-                        <th>Current Status</th>
+                        <th>Latest Status</th>
                     </tr>
                 </thead>
                 <tbody id="todayLogsTableBody">
-                    <tr><td colspan="10" style="text-align:center; padding: 22px; color: #64748b;">Fetching live logs from iyattid.iyattraltechnologies.com...</td></tr>
+                    <tr><td colspan="7" style="text-align:center; padding: 22px; color: #64748b;">Fetching live logs...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Hardware Command Modal -->
     <div class="modal-overlay" id="hardwareActionModal">
         <div class="modal-content" style="text-align: center;">
             <button class="modal-close" onclick="closeHardwareModal()">×</button>
@@ -330,24 +323,8 @@
         });
 
         function hasCheckOut2(row) {
-            const val = (row.check_out_2 || "").trim();
-            return val !== "" && val !== "-" && val.toLowerCase() !== "null" && val.toLowerCase() !== "n/a";
-        }
-
-        function getCardBadgeText(row) {
-            if (hasCheckOut2(row)) return "CHECK-OUT 2";
-            const ci1 = (row.check_in_1 || "").trim();
-            if (ci1 && ci1 !== "-" && ci1.toLowerCase() !== "n/a") {
-                return `CHECK-IN: ${ci1}`;
-            }
-            return (row.status || "NO PUNCH").toUpperCase();
-        }
-
-        function getPunctualityClass(text) {
-            const lower = (text || "").toLowerCase();
-            if (lower.includes("late")) return "col-late";
-            if (lower.includes("early") || lower.includes("on time")) return "col-early";
-            return "";
+            const val = (row.check_out_2 || "").trim().toLowerCase();
+            return val !== "" && val !== "-" && val !== "null" && val !== "n/a" && val !== "none";
         }
 
         function renderDashboard(rows) {
@@ -356,7 +333,7 @@
 
             if (!Array.isArray(rows) || rows.length === 0) {
                 grid.innerHTML = `<div class="empty-state-card">No records extracted from iyattid.iyattraltechnologies.com.</div>`;
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 22px; color: #64748b;">No punch rows returned by source page.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 22px; color: #64748b;">No punch rows returned.</td></tr>`;
                 return;
             }
 
@@ -366,14 +343,13 @@
                     <div class="staff-card ${isOut2 ? "checkout-two-alert" : ""}">
                         <div class="staff-name">${row.name}</div>
                         <div class="staff-id">Employee ID: ${row.id}</div>
-                        <span class="staff-badge">${getCardBadgeText(row)}</span>
+                        <span class="staff-badge">${row.latest_status}</span>
                     </div>
                 `;
             }).join("");
 
             tbody.innerHTML = rows.map((row) => {
                 const isOut2 = hasCheckOut2(row);
-                const punctClass = getPunctualityClass(row.punctuality);
                 return `
                     <tr class="${isOut2 ? "checkout-two-row" : ""}">
                         <td>${row.id}</td>
@@ -382,10 +358,7 @@
                         <td>${row.check_out_1}</td>
                         <td>${row.check_in_2}</td>
                         <td>${row.check_out_2}</td>
-                        <td>${row.lunch_break}</td>
-                        <td class="${punctClass}">${row.punctuality}</td>
-                        <td>${row.extra_hours}</td>
-                        <td>${row.status}</td>
+                        <td>${row.latest_status}</td>
                     </tr>
                 `;
             }).join("");
@@ -405,7 +378,7 @@
                 renderDashboard(payload.data || []);
             } catch (err) {
                 grid.innerHTML = `<div class="empty-state-card">Unable to load live status: ${err.message}</div>`;
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 22px; color: #dc2626;">Error: ${err.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 22px; color: #dc2626;">Error: ${err.message}</td></tr>`;
             }
         }
 

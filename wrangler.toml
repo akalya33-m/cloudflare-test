@@ -10,3 +10,8 @@ id = "c06c814cf1ef44379066a40afd56b43d"
 binding = "DB"
 database_name = "attendance-db"
 database_id = "d5be362c-b080-4359-bf92-12aedf5ca7d4"
+
+[[d1_databases]]
+binding = "DB1"
+database_name = "iyattral_attendance_db"
+database_id = "2b35bb2a-083e-4fdf-8430-1775dce88b34"
