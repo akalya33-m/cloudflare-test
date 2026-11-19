@@ -17,53 +17,81 @@ export async function onRequestGet(context) {
     }
 
     const html = await response.text();
-    const logs = [];
 
+    // Extract all <table> blocks and pick the one matching Today's Active Punch Logs
+    // (10 columns starting with ID / Employee Name, NOT the historical table which starts with Date)
+    const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
     const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
     const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
 
-    let rowMatch;
-    while ((rowMatch = rowRegex.exec(html)) !== null) {
-      const cells = [];
-      let cellMatch;
-      while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
-        const cleaned = cellMatch[1]
-          .replace(/<[^>]*>/g, " ")
-          .replace(/&nbsp;/gi, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-        cells.push(cleaned);
+    const cleanCell = (raw) =>
+      raw
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    let todayRows = [];
+    let tableMatch;
+
+    while ((tableMatch = tableRegex.exec(html)) !== null) {
+      const tableHtml = tableMatch[1];
+      const parsedRows = [];
+      let rowMatch;
+
+      while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
+        const cells = [];
+        let cellMatch;
+        while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
+          cells.push(cleanCell(cellMatch[1]));
+        }
+        if (cells.length > 0) {
+          parsedRows.push(cells);
+        }
       }
 
-      // Skip header rows or placeholder loading rows
-      const firstCell = (cells[0] || "").toLowerCase();
-      const joinedRow = cells.join(" ").toLowerCase();
-      if (
-        cells.length >= 2 &&
-        firstCell !== "id" &&
-        firstCell !== "emp id" &&
-        !joinedRow.includes("loading today's biometric logs")
-      ) {
-        logs.push({
-          id: cells[0] || "-",
-          name: cells[1] || "Unknown",
-          check_in_1: cells[2] || "-",
-          check_out_1: cells[3] || "-",
-          check_in_2: cells[4] || "-",
-          check_out_2: cells[5] || "-",
-          lunch_break: cells[6] || "-",
-          punctuality: cells[7] || "-",
-          extra_hours: cells[8] || "-",
-          status: cells[9] || (cells[5] && cells[5] !== "-" ? "Checked Out 2" : "Active")
-        });
+      if (parsedRows.length === 0) continue;
+
+      const headerJoined = parsedRows[0].join(" ").toLowerCase();
+      const isTodayTable =
+        headerJoined.includes("employee name") &&
+        headerJoined.includes("check-in 1") &&
+        !headerJoined.includes("9-hr compliance");
+
+      if (isTodayTable) {
+        for (let i = 1; i < parsedRows.length; i++) {
+          const c = parsedRows[i];
+          const first = (c[0] || "").toLowerCase();
+          const second = (c[1] || "").toLowerCase();
+
+          // Skip empty rows, header repeats, or loading placeholders
+          if (!c[0] || !c[1]) continue;
+          if (first === "id" || second === "employee name") continue;
+          if (c.join(" ").toLowerCase().includes("loading today's biometric logs")) continue;
+
+          todayRows.push({
+            id: c[0],
+            name: c[1],
+            check_in_1: c[2] || "-",
+            check_out_1: c[3] || "-",
+            check_in_2: c[4] || "-",
+            check_out_2: c[5] || "-",
+            lunch_break: c[6] || "-",
+            punctuality: c[7] || "-",
+            extra_hours: c[8] || "-",
+            status: c[9] || "Active"
+          });
+        }
+        break;
       }
     }
 
     return new Response(JSON.stringify({
       success: true,
       source: SOURCE_URL,
-      count: logs.length,
-      data: logs
+      count: todayRows.length,
+      data: todayRows
     }), {
       status: 200,
       headers: { "Content-Type": "application/json" }

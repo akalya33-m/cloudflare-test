@@ -3,61 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iyattral Technologies - Attendance Portal</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Iyattral Technologies - Biometric Attendance Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            padding: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #eef1f5;
-            color: #1e293b;
-            font-size: 14px;
+            padding: 24px 16px;
+            font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+            background: radial-gradient(circle at top left, #172554 0%, #090d16 55%, #060911 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
         }
         .container {
-            max-width: 1320px;
+            max-width: 1240px;
             margin: 0 auto;
-            padding: 16px;
         }
 
-        /* Header */
+        /* Header matching reference UI */
         .header {
-            background: #1f2d3d;
-            color: #ffffff;
-            padding: 12px 18px;
-            border-radius: 4px;
-            border-bottom: 3px solid #0d6efd;
+            background: linear-gradient(90deg, #1e1b4b 0%, #2e1065 55%, #3b0764 100%);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+            border-radius: 16px;
+            padding: 18px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 14px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
         }
         .brand-container {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
         .company-logo {
-            width: 44px;
-            height: 44px;
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
             object-fit: cover;
-            border-radius: 4px;
             background: #ffffff;
-            padding: 2px;
-            border: 1px solid #cbd5e1;
+            padding: 3px;
         }
         .title-group h1 {
             margin: 0;
-            font-size: 18px;
-            font-weight: 700;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            color: #ffffff;
         }
         .title-group p {
-            margin: 2px 0 0;
+            margin: 3px 0 0;
             font-size: 12px;
             color: #cbd5e1;
+            font-weight: 500;
         }
         .header-actions {
             display: flex;
@@ -65,154 +68,165 @@
             flex-wrap: wrap;
             gap: 8px;
         }
-        .settings-btn {
-            background: #f8f9fa;
-            color: #212529;
-            border: 1px solid #adb5bd;
-            padding: 6px 10px;
-            border-radius: 3px;
+        .action-btn {
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 8px;
+            padding: 8px 13px;
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 700;
+            color: #ffffff;
             cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.15s ease;
         }
-        .settings-btn:hover { background: #e2e6ea; }
+        .action-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+        .btn-refresh { background: rgba(14, 165, 233, 0.28); border-color: rgba(56, 189, 248, 0.5); color: #7dd3fc; }
+        .btn-enroll  { background: rgba(16, 185, 129, 0.28); border-color: rgba(52, 211, 153, 0.5); color: #6ee7b7; }
+        .btn-delete  { background: rgba(239, 68, 68, 0.25);  border-color: rgba(248, 113, 113, 0.5); color: #fca5a5; }
         .badge-live {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            background: #14532d;
-            color: #dcfce7;
-            border: 1px solid #22c55e;
-            padding: 5px 10px;
-            border-radius: 3px;
+            gap: 7px;
+            background: rgba(16, 185, 129, 0.16);
+            border: 1px solid rgba(52, 211, 153, 0.45);
+            color: #6ee7b7;
+            padding: 8px 14px;
+            border-radius: 999px;
             font-size: 12px;
             font-weight: 700;
         }
         .pulse-dot {
             width: 8px;
             height: 8px;
-            background: #22c55e;
             border-radius: 50%;
+            background: #34d399;
         }
 
-        /* Section Header */
+        /* Section Title Row */
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-left: 4px solid #1f2d3d;
-            padding: 10px 14px;
-            margin-top: 18px;
-            margin-bottom: 12px;
-            border-radius: 3px;
+            margin-top: 26px;
+            margin-bottom: 14px;
+            gap: 10px;
+            flex-wrap: wrap;
         }
         .section-title {
-            font-size: 15px;
+            font-size: 16px;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+        .section-date {
+            font-size: 12px;
             font-weight: 700;
-            color: #1f2d3d;
+            color: #cbd5e1;
         }
 
-        /* Aligned Status Board Cards */
+        /* Staff Cards Grid */
         .status-board-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 16px;
         }
         .staff-card {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-top: 3px solid #198754;
-            border-radius: 3px;
-            padding: 12px 14px;
+            background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%);
+            color: #0f172a;
+            border-radius: 14px;
+            padding: 18px 20px;
+            border-left: 5px solid #10b981;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
         .staff-card.checkout-two-alert {
-            background: #fef2f2;
-            border-color: #ef4444;
-            border-top-color: #dc2626;
+            background: linear-gradient(145deg, #fef2f2 0%, #fee2e2 100%);
+            border-left-color: #ef4444;
+            border: 1px solid #f87171;
+            border-left-width: 5px;
         }
         .staff-name {
             font-size: 15px;
-            font-weight: 700;
+            font-weight: 800;
             color: #0f172a;
+            text-transform: uppercase;
         }
-        .staff-meta {
+        .staff-id {
             font-size: 12px;
+            font-weight: 600;
             color: #475569;
+            margin-bottom: 4px;
         }
-        .staff-times {
-            font-size: 12px;
-            color: #334155;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 6px 8px;
-            border-radius: 3px;
-            line-height: 1.45;
-        }
-        .status-tag {
+        .staff-badge {
             align-self: flex-start;
+            background: #10b981;
+            color: #ffffff;
             font-size: 11px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 3px;
-            background: #dcfce7;
-            color: #166534;
-            border: 1px solid #86efac;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 6px;
+            letter-spacing: 0.3px;
         }
-        .checkout-two-alert .status-tag {
-            background: #fee2e2;
-            color: #991b1b;
-            border-color: #fca5a5;
+        .checkout-two-alert .staff-badge {
+            background: #dc2626;
+        }
+        .empty-state-card {
+            grid-column: 1 / -1;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            color: #94a3b8;
+            border-radius: 12px;
+            padding: 18px;
+            font-size: 13px;
         }
 
-        /* Aligned Table */
+        /* Punch Logs Table */
         .table-container {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 3px;
+            background: #f8fafc;
+            color: #0f172a;
+            border-radius: 14px;
             overflow-x: auto;
-            margin-top: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
         }
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
-            table-layout: fixed;
         }
-        thead {
-            background: #e2e8f0;
-            color: #1e293b;
-        }
-        th, td {
-            padding: 9px 10px;
-            border: 1px solid #cbd5e1;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        thead th {
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
             white-space: nowrap;
         }
-        th:nth-child(1), td:nth-child(1) { width: 65px; text-align: center; }
-        th:nth-child(2), td:nth-child(2) { width: 170px; text-align: left; }
-        th:nth-child(3), td:nth-child(3),
-        th:nth-child(4), td:nth-child(4),
-        th:nth-child(5), td:nth-child(5),
-        th:nth-child(6), td:nth-child(6),
-        th:nth-child(7), td:nth-child(7) { width: 105px; text-align: center; }
-        th:nth-child(8), td:nth-child(8),
-        th:nth-child(9), td:nth-child(9) { width: 105px; text-align: center; }
-        th:nth-child(10), td:nth-child(10) { width: 130px; text-align: center; }
+        tbody td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #1e293b;
+            white-space: nowrap;
+        }
+        tbody tr.checkout-two-row td {
+            background: #fef2f2;
+            color: #b91c1c;
+            font-weight: 700;
+        }
+        .col-emp-name { color: #2563eb; font-weight: 700; }
+        .col-checkin  { color: #059669; font-weight: 700; }
+        .col-late     { color: #dc2626; font-weight: 700; }
+        .col-early    { color: #059669; font-weight: 700; }
 
-        tbody tr:nth-child(even) { background: #f8fafc; }
-        tbody tr.checkout-two-row { background: #fef2f2; color: #991b1b; font-weight: 600; }
-
-        /* Modals */
+        /* Modal */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.55);
+            background: rgba(2, 6, 23, 0.75);
             display: none;
             align-items: center;
             justify-content: center;
@@ -221,24 +235,23 @@
         }
         .modal-content {
             background: #ffffff;
-            color: #1e293b;
-            border: 1px solid #94a3b8;
-            border-radius: 4px;
-            padding: 20px;
+            color: #0f172a;
+            border-radius: 12px;
+            padding: 22px;
             width: 100%;
-            max-width: 460px;
+            max-width: 400px;
             position: relative;
         }
         .modal-close {
             position: absolute;
-            top: 10px;
-            right: 12px;
-            background: #e2e8f0;
-            border: 1px solid #94a3b8;
-            border-radius: 3px;
-            width: 26px;
-            height: 26px;
-            font-weight: 700;
+            top: 12px;
+            right: 14px;
+            border: none;
+            background: #f1f5f9;
+            border-radius: 6px;
+            width: 28px;
+            height: 28px;
+            font-weight: 800;
             cursor: pointer;
         }
     </style>
@@ -250,29 +263,29 @@
                 <img src="https://iyattraltechnologies.com/wp-content/uploads/2026/01/WhatsApp-Image-2025-12-24-at-11.45.35-AM.jpeg" alt="Iyattral Logo" class="company-logo" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png';">
                 <div class="title-group">
                     <h1>IYATTRAL TECHNOLOGIES</h1>
-                    <p>Biometric &amp; RFID Attendance System | Shift: 10:00 AM – 07:00 PM</p>
+                    <p>Biometric Attendance Intelligence | Shift: 10:00 AM – 07:00 PM</p>
                 </div>
             </div>
             <div class="header-actions">
-                <button class="settings-btn" onclick="loadAttendanceData()">Refresh Data</button>
-                <button class="settings-btn" onclick="openHardwareModal('enroll')">Enroll Fingerprint</button>
-                <button class="settings-btn" onclick="openHardwareModal('delete')">Delete Fingerprint</button>
+                <button class="action-btn btn-refresh" onclick="loadAttendanceData()">↻ Refresh</button>
+                <button class="action-btn btn-enroll" onclick="openHardwareModal('enroll')">+ Enroll Fingerprint</button>
+                <button class="action-btn btn-delete" onclick="openHardwareModal('delete')">🗑️ Delete Fingerprint</button>
                 <div class="badge-live">
-                    <span class="pulse-dot"></span> Live Sync
+                    <span class="pulse-dot"></span> Live IoT Stream
                 </div>
             </div>
         </div>
 
         <div class="section-header">
-            <div class="section-title">Biometric &amp; RFID Staff Status Board</div>
-            <div id="currentDateDisplay" style="font-size: 12px; font-weight: 700; color: #334155;"></div>
+            <div class="section-title">👥 Biometric &amp; RFID Staff Status Board</div>
+            <div class="section-date" id="currentDateDisplay"></div>
         </div>
         <div class="status-board-grid" id="statusBoardGrid">
-            <div class="staff-card">Loading staff status...</div>
+            <div class="empty-state-card">Loading live staff status...</div>
         </div>
 
-        <div class="section-header" style="margin-top: 24px;">
-            <div class="section-title">Today's Active Punch Logs &amp; Shift Durations</div>
+        <div class="section-header" style="margin-top: 28px;">
+            <div class="section-title">📊 Today's Active Punch Logs &amp; Shift Durations</div>
         </div>
         <div class="table-container">
             <table>
@@ -284,36 +297,36 @@
                         <th>Check-Out 1</th>
                         <th>Check-In 2</th>
                         <th>Check-Out 2</th>
-                        <th>Lunch / Break</th>
+                        <th>🍽️ Lunch / Break</th>
                         <th>Punctuality</th>
                         <th>Extra Hours</th>
                         <th>Current Status</th>
                     </tr>
                 </thead>
                 <tbody id="todayLogsTableBody">
-                    <tr><td colspan="10" style="text-align:center; padding: 18px;">Loading extracted records...</td></tr>
+                    <tr><td colspan="10" style="text-align:center; padding: 22px; color: #64748b;">Fetching live logs from iyattid.iyattraltechnologies.com...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Hardware Modal -->
+    <!-- Hardware Command Modal -->
     <div class="modal-overlay" id="hardwareActionModal">
         <div class="modal-content" style="text-align: center;">
-            <button class="modal-close" onclick="closeHardwareModal()">&times;</button>
-            <h3 id="hardwareModalTitle" style="margin-top:0;">Hardware Command</h3>
-            <p id="hardwareModalSubtitle" style="font-size:12px; color:#475569;">Enter Employee ID:</p>
-            <input type="number" id="modalHardwareEmpId" placeholder="Employee ID (e.g. 1)" style="width:100%; padding:8px; margin:10px 0 14px; border:1px solid #94a3b8; border-radius:3px; text-align:center;">
-            <button onclick="closeHardwareModal()" style="background:#1f2d3d; color:#fff; border:none; padding:8px 16px; border-radius:3px; cursor:pointer; font-weight:700;">Done</button>
+            <button class="modal-close" onclick="closeHardwareModal()">×</button>
+            <h3 id="hardwareModalTitle" style="margin-top: 0;">Hardware Command</h3>
+            <p id="hardwareModalSubtitle" style="font-size: 13px; color: #475569;">Enter Employee ID:</p>
+            <input type="number" id="modalHardwareEmpId" placeholder="Employee ID" style="width: 100%; padding: 10px; margin: 10px 0 16px; border: 1px solid #cbd5e1; border-radius: 8px; text-align: center; font-weight: 700;">
+            <button onclick="closeHardwareModal()" style="background: #1e1b4b; color: #ffffff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer;">Close</button>
         </div>
     </div>
 
     <script>
-        document.getElementById("currentDateDisplay").textContent = new Date().toLocaleDateString("en-IN", {
+        document.getElementById("currentDateDisplay").textContent = new Date().toLocaleDateString("en-GB", {
             weekday: "long",
-            year: "numeric",
+            day: "2-digit",
             month: "short",
-            day: "numeric"
+            year: "numeric"
         });
 
         function hasCheckOut2(row) {
@@ -321,62 +334,78 @@
             return val !== "" && val !== "-" && val.toLowerCase() !== "null" && val.toLowerCase() !== "n/a";
         }
 
+        function getCardBadgeText(row) {
+            if (hasCheckOut2(row)) return "CHECK-OUT 2";
+            const ci1 = (row.check_in_1 || "").trim();
+            if (ci1 && ci1 !== "-" && ci1.toLowerCase() !== "n/a") {
+                return `CHECK-IN: ${ci1}`;
+            }
+            return (row.status || "NO PUNCH").toUpperCase();
+        }
+
+        function getPunctualityClass(text) {
+            const lower = (text || "").toLowerCase();
+            if (lower.includes("late")) return "col-late";
+            if (lower.includes("early") || lower.includes("on time")) return "col-early";
+            return "";
+        }
+
         function renderDashboard(rows) {
             const grid = document.getElementById("statusBoardGrid");
             const tbody = document.getElementById("todayLogsTableBody");
 
             if (!Array.isArray(rows) || rows.length === 0) {
-                grid.innerHTML = `<div class="staff-card">No attendance records extracted from iyattid.iyattraltechnologies.com.</div>`;
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:18px; color:#64748b;">No rows found in source HTML.</td></tr>`;
+                grid.innerHTML = `<div class="empty-state-card">No records extracted from iyattid.iyattraltechnologies.com.</div>`;
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 22px; color: #64748b;">No punch rows returned by source page.</td></tr>`;
                 return;
             }
 
-            grid.innerHTML = rows.map(r => {
-                const isOut2 = hasCheckOut2(r);
+            grid.innerHTML = rows.map((row) => {
+                const isOut2 = hasCheckOut2(row);
                 return `
                     <div class="staff-card ${isOut2 ? "checkout-two-alert" : ""}">
-                        <div class="staff-name">${r.name}</div>
-                        <div class="staff-meta">ID: ${r.id}</div>
-                        <div class="staff-times">
-                            In 1: <strong>${r.check_in_1}</strong> | Out 1: <strong>${r.check_out_1}</strong><br>
-                            In 2: <strong>${r.check_in_2}</strong> | Out 2: <strong>${r.check_out_2}</strong>
-                        </div>
-                        <span class="status-tag">${isOut2 ? "Checked Out 2" : r.status}</span>
+                        <div class="staff-name">${row.name}</div>
+                        <div class="staff-id">Employee ID: ${row.id}</div>
+                        <span class="staff-badge">${getCardBadgeText(row)}</span>
                     </div>
                 `;
             }).join("");
 
-            tbody.innerHTML = rows.map(r => {
-                const isOut2 = hasCheckOut2(r);
+            tbody.innerHTML = rows.map((row) => {
+                const isOut2 = hasCheckOut2(row);
+                const punctClass = getPunctualityClass(row.punctuality);
                 return `
                     <tr class="${isOut2 ? "checkout-two-row" : ""}">
-                        <td>${r.id}</td>
-                        <td>${r.name}</td>
-                        <td>${r.check_in_1}</td>
-                        <td>${r.check_out_1}</td>
-                        <td>${r.check_in_2}</td>
-                        <td>${r.check_out_2}</td>
-                        <td>${r.lunch_break}</td>
-                        <td>${r.punctuality}</td>
-                        <td>${r.extra_hours}</td>
-                        <td>${isOut2 ? "Checked Out 2" : r.status}</td>
+                        <td>${row.id}</td>
+                        <td class="col-emp-name">${row.name}</td>
+                        <td class="col-checkin">${row.check_in_1}</td>
+                        <td>${row.check_out_1}</td>
+                        <td>${row.check_in_2}</td>
+                        <td>${row.check_out_2}</td>
+                        <td>${row.lunch_break}</td>
+                        <td class="${punctClass}">${row.punctuality}</td>
+                        <td>${row.extra_hours}</td>
+                        <td>${row.status}</td>
                     </tr>
                 `;
             }).join("");
         }
 
         async function loadAttendanceData() {
+            const grid = document.getElementById("statusBoardGrid");
             const tbody = document.getElementById("todayLogsTableBody");
+
             try {
                 const res = await fetch("/api/fetch-logs", { cache: "no-store" });
                 const payload = await res.json();
 
                 if (!payload.success) {
-                    throw new Error(payload.error || "Failed to extract data");
+                    throw new Error(payload.error || "Failed to fetch logs");
                 }
                 renderDashboard(payload.data || []);
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:18px; color:#b91c1c;">Error loading data: ${err.message}</td></tr>`;
+                grid.innerHTML = `<div class="empty-state-card">Unable to load live status: ${err.message}</div>`;
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 22px; color: #dc2626;">Error: ${err.message}</td></tr>`;
             }
         }
 
